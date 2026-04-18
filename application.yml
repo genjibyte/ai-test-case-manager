@@ -1,0 +1,65 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+  tomcat:
+    max-http-form-post-size: 24MB
+
+# Coze（扣子）：与官方 curl 一致
+# - 工作流：POST .../v1/workflow/stream_run，body.workflow_id + parameters.input 等
+# - Agent：POST .../v3/chat，body.bot_id + user_id + stream + additional_messages + parameters
+# 令牌用环境变量 AI_API_KEY 注入，勿把 token 提交到仓库
+alsystem:
+  ai:
+    workflow-url: https://api.coze.cn/v1/workflow/stream_run
+    agent-url: https://api.coze.cn/v3/chat
+    api-key: ${COZI_API_KEY}
+    api-key-header-name: Authorization
+    coze-workflow-id: "7621188142721400838"
+    coze-bot-id: "7621194831741943848"
+
+  # 阿里云 OSS：本地文档上传后写入 Bucket，返回公网 URL 填入「文档 URL」供工作流使用（详见 OSS配置说明.md）
+  oss:
+    enabled: true
+    endpoint: ${ALIYUN_OSS_ENDPOINT}
+    access-key-id: ${ALIYUN_ACCESSKEY_ID}
+    access-key-secret: ${ALIYUN_ACCESSKEY_SECRET}
+    bucket-name: ${ALIYUN_OSS_BUCKET_NAME}
+    object-prefix: ${ALIYUN_OSS_OBJECT_PREFIX:case-upload}
+    # 若已绑定自定义域名/CDN，填 https://your.cdn.com（无末尾 /）；留空则用 https://bucket.endpoint/对象键
+    public-url-prefix: ${ALIYUN_OSS_PUBLIC_URL_PREFIX:}
+
+spring:
+  application:
+    name: alsystem-case-manager
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/init.sql
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 55MB
+  datasource:
+    url: jdbc:mysql://localhost:3306/case_manager?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      logic-delete-field: delFlag
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+      id-type: assign_id
+
+jwt:
+  secret: ${JWT_SECRET}
+  expire-seconds: 7200
+
+logging:
+  level:
+    com.alsystem.casemanager: debug
